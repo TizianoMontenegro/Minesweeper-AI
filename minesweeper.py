@@ -196,14 +196,18 @@ class MinesweeperAI():
         # Add knowledge
         # Looping around the given cell
         # And adding the neighbors cell into a set
-        distance = 1
         cells_set = set()
-        print(cell, count) # --------------
-        for row in range(cell[0]-distance, cell[0]+distance+1):
-            for col in range(cell[1]-distance, cell[1]+distance+1):
+        for row in range(cell[0]-1, cell[0]+2):
+            for col in range(cell[1]-1, cell[1]+2):
+                # If cell is into the limit cells of board 8x8
                 if (row,col) != cell and 0 <= row < self.height and 0 <= col < self.width:
-                    cells_set.add((row,col))
-        print(cells_set) # --------------
+                    # If cell is not a clicked one, not neither a safe and a mine
+                    if (row,col) not in self.moves_made and (row,col) not in self.safes and (row,col) not in self.mines:
+                        cells_set.add((row,col))
+
+                    # If cell is a mine susbtract one to the count because wo wont add it to the K.B.
+                    elif (row,col) in self.mines:
+                        count -= 1
         # Create a new Sentence
         new_sentence = Sentence(cells=cells_set, count=count)
         # Add that part of knowledge in the knowledge base
@@ -225,13 +229,18 @@ class MinesweeperAI():
         # Then infer new information from it and add it to the ai knowledge base
         for sentence in self.knowledge:
             if cells_set.issubset(sentence.cells) and cells_set != sentence.cells:
+                # Get the difference between both sets
                 remaining_cells = sentence.cells.difference(cells_set)
                 
+                # Get the difference of counts
                 remaining_count = sentence.count - count
                 
+                # If remaining_cells has cells
                 if remaining_cells:
+                    # Create a new sentence with new knowledge
                     new_sentence = Sentence(cells=remaining_cells, count=remaining_count)
                     
+                    # Add sentence if it's already not in the K.B.
                     if new_sentence not in self.knowledge:
                         self.knowledge.append(new_sentence)
 
