@@ -107,6 +107,7 @@ class Sentence():
         """
         if len(self.cells) == self.count:
             return self.cells
+        return set()
 
     def known_safes(self):
         """
@@ -114,6 +115,7 @@ class Sentence():
         """
         if self.count == 0:
             return self.cells
+        return set()
 
     def mark_mine(self, cell):
         """
@@ -213,36 +215,78 @@ class MinesweeperAI():
         # Add that part of knowledge in the knowledge base
         self.knowledge.append(new_sentence)
 
-        # If a cell in cells is know to be mine or safe in a sentence, 
-        # Then mark that cell as mine or safe                                                        
-        for cell in cells_set:
-            for sentence in self.knowledge:
-                if sentence.known_mines():
-                    if cell in sentence.known_mines():
-                        self.mark_mine(cell)
+        # # If a cell in cells is know to be mine or safe in a sentence, 
+        # # Then mark that cell as mine or safe                                                        
+        # for cell in cells_set:
+        #     for sentence in self.knowledge:
+        #         if sentence.known_mines():
+        #             if cell in sentence.known_mines():
+        #                 self.mark_mine(cell)
 
-                if sentence.known_safes():
-                    if cell in sentence.known_safes():
-                        self.mark_safe(cell)
+        #         if sentence.known_safes():
+        #             if cell in sentence.known_safes():
+        #                 self.mark_safe(cell)
 
-        # If cells_set is a subset of one sentence in ai knowledge
-        # Then infer new information from it and add it to the ai knowledge base
-        for sentence in self.knowledge:
-            if cells_set.issubset(sentence.cells) and cells_set != sentence.cells:
-                # Get the difference between both sets
-                remaining_cells = sentence.cells.difference(cells_set)
+        # # If cells_set is a subset of one sentence in ai knowledge
+        # # Then infer new information from it and add it to the ai knowledge base
+        # for sentence in self.knowledge:
+        #     if cells_set.issubset(sentence.cells) and cells_set != sentence.cells:
+        #         # Get the difference between both sets
+        #         remaining_cells = sentence.cells.difference(cells_set)
                 
-                # Get the difference of counts
-                remaining_count = sentence.count - count
+        #         # Get the difference of counts
+        #         remaining_count = sentence.count - count
                 
-                # If remaining_cells has cells
-                if remaining_cells:
-                    # Create a new sentence with new knowledge
-                    new_sentence = Sentence(cells=remaining_cells, count=remaining_count)
+        #         # If remaining_cells has cells
+        #         if remaining_cells:
+        #             # Create a new sentence with new knowledge
+        #             new_sentence = Sentence(cells=remaining_cells, count=remaining_count)
                     
-                    # Add sentence if it's already not in the K.B.
-                    if new_sentence not in self.knowledge:
-                        self.knowledge.append(new_sentence)
+        #             # Add sentence if it's already not in the K.B.
+        #             if new_sentence not in self.knowledge:
+        #                 self.knowledge.append(new_sentence)
+
+        while True:
+            loop_stop = False
+
+            # If a cell in sentence is known to be mine or safe in a sentence,
+            # But it does not recognized as safe or mine cell 
+            # Then mark that cell as mine or safe       
+            for sentence in self.knowledge.copy():
+                safe_cells = sentence.known_safes()
+                if safe_cells:
+                    for safe_cell in safe_cells.copy():
+                        if safe_cell not in self.safes:
+                            self.mark_safe(safe_cell)
+                            loop_stop = True
+                
+                mine_cells = sentence.known_mines()
+                if mine_cells:
+                    for mine_cell in mine_cells.copy():
+                        if mine_cell not in self.mines:
+                            self.mark_mine(mine_cell)
+                            loop_stop = True
+                
+            # If cells_set is a subset of one sentence in ai knowledge
+            # Then infer new information from it and add it to the ai knowledge base
+            for index1, sentence1 in enumerate(self.knowledge):
+                for index2, sentence2 in enumerate(self.knowledge):
+                    if index1 == index2:
+                        continue
+
+                    if sentence1.cells.issubset(sentence2.cells):
+                        cells_based = sentence2.cells.difference(sentence1.cells)
+                        count_based = sentence2.count - sentence1.count
+                        
+                        if len(cells_based) != 0:
+                            sentence_based = Sentence(cells=cells_based, count=count_based)
+
+                            if sentence_based not in self.knowledge:
+                                self.knowledge.append(sentence_based)
+                                loop_stop = True
+
+            if not loop_stop:
+                break
 
 
     def make_safe_move(self):
